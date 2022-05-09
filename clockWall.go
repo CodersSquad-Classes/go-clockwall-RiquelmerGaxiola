@@ -15,10 +15,24 @@ type clock struct {
 	name, host string
 }
 
+func TimeIn(t time.Time, name string) (time.Time, error) {
+	loc, err := time.LoadLocation(name)
+	if err == nil {
+		t = t.In(loc)
+	}
+	return t, err
+}
+
 func (c *clock) watch(w io.Writer, r io.Reader) {
 	s := bufio.NewScanner(r)
 	for s.Scan() {
-		fmt.Fprintf(w, "%s   : %s\n", c.name, s.Text())
+		//fmt.Fprintf(w, "%s   : %s\n", c.name, s.Text())
+		t, err := TimeIn(time.Now(), c.name)
+		if err == nil {
+			fmt.Println(t.Location(), t.Format("15:04:05"))
+		} else {
+			fmt.Println(c.name, "<time unknown>")
+		}
 	}
 	fmt.Println(c.name, "done")
 	if s.Err() != nil {
@@ -28,7 +42,8 @@ func (c *clock) watch(w io.Writer, r io.Reader) {
 
 func main() {
 	if len(os.Args) == 1 {
-		fmt.Fprintln(os.Stderr, "usage: clockWall.go Name1=Host1 Name2=Host2 ...")
+		fmt.Fprintln(os.Stderr, "usage: clockWall.go Region1/Name1=Host1 Region2/Name2=Host2 ...")
+		fmt.Fprintln(os.Stderr, "Example: US/Eastern=localhost:8000 US/Central=localhost:8001")
 		os.Exit(1)
 	}
 	clocks := make([]*clock, 0)
